@@ -80,3 +80,21 @@ def edit_post(id):
     return render_template("edit_post.html", post = post,edit_form = edit_form)
 
 
+@main.route("/post/new", methods = ["POST", "GET"])
+@login_required
+def new_post():
+    post_form = PostForm()
+    if post_form.validate_on_submit():
+        post_title = post_form.title.data
+        post_form.title.data = ""
+        post_content = bleach.clean(post_form.post.data, tags = bleach.sanitizer.ALLOWED_TAGS + ["h1", "h2", "h3", "h4","h5", "h6", "p", "span","div", "br", "em", "strong","i", "blockquote", "hr", "a","ul", "ol", "li"])
+        post_form.post.data = ""
+        new_post = Post(post_title = post_title,post_content = post_content,posted_at = datetime.now(),post_by = current_user.username,user_id = current_user.id)
+        new_post.save_post()
+        subs = Subscribers.query.all()
+        for sub in subs:
+            notification_message(post_title, "email/notification", sub.email, new_post = new_post)
+            pass
+        return redirect(url_for("main.post", id = new_post.id))
+    
+    return render_template("new_post.html",post_form = post_form)
