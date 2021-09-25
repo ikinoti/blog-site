@@ -112,3 +112,29 @@ def profile(id):
         welcome_message("Thank you for subscribing to the CM blog", "email/welcome", new_sub.email)
 
     return render_template("profile/profile.html",user = user,posts = posts)
+
+@main.route("/profile/<int:id>/<int:post_id>/delete")
+@login_required
+def delete_post(id, post_id):
+    user = User.query.filter_by(id = id).first()
+    post = Post.query.filter_by(id = post_id).first()
+    db.session.delete(post)
+    db.session.commit()
+    return redirect(url_for("main.profile", id = user.id))
+
+@main.route("/profile/<int:id>/update", methods = ["POST", "GET"])
+@login_required
+def update_profile(id):
+    user = User.query.filter_by(id = id).first()
+    form = UpdateProfile()
+    if form.validate_on_submit():
+        user.first_name = form.first_name.data
+        user.last_name = form.last_name.data
+        user.email = form.email.data
+        user.bio = form.bio.data
+
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for("main.profile", id = id))
+    
+    return render_template("profile/update.html",user = user,form = form)
